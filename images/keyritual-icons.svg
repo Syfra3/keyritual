@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" role="img" aria-labelledby="title desc">
+  <title id="title">Keyritual iconography</title><desc id="desc">Four original icons derived from terminal prompts and the ritual key: prompt, keycap, orbital seal and crossed-key monogram.</desc>
+  <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#223039" stroke-width="1"/></pattern></defs>
+  <rect width="1000" height="430" fill="#080e13"/><rect width="1000" height="430" fill="url(#grid)"/>
+  <text x="35" y="44" fill="#779489" font-family="JetBrains Mono,IBM Plex Mono,DejaVu Sans Mono,monospace" font-size="14" letter-spacing="2">KEYRITUAL // 02_ICONOGRAPHY</text>
+  <g fill="none" stroke="#33494b"><rect x="35" y="73" width="211" height="271"/><rect x="275" y="73" width="211" height="271"/><rect x="515" y="73" width="211" height="271"/><rect x="755" y="73" width="211" height="271"/></g>
+  <g fill="none" stroke="#a7e8bc" stroke-width="6" stroke-linejoin="miter" stroke-linecap="square"><path d="m92 168 43 38-43 38M148 248h52"/><path d="M327 163h105v105H327zM343 182h72v67h-72z"/><circle cx="621" cy="215" r="73"/><circle cx="621" cy="215" r="56"/><path d="M621 142v146M548 215h146M573 167l96 96M669 167l-96 96"/><path d="m801 167 120 100m0-100-120 100M816 163v107m90-107v107"/></g>
+  <path d="M357 232v-42l28 24-28 24m25-24 28-24m-28 24 28 24" fill="none" stroke="#edaa77" stroke-width="5"/>
+  <g fill="#080e13" stroke="#a7e8bc" stroke-width="4"><circle cx="621" cy="142" r="11"/><circle cx="694" cy="215" r="11"/><circle cx="621" cy="288" r="11"/><circle cx="548" cy="215" r="11"/></g>
+  <path d="m839 192 33 45 33-45m-66 49 33-45 33 45" fill="none" stroke="#edaa77" stroke-width="4"/>
+  <g fill="#779489" font-family="JetBrains Mono,IBM Plex Mono,DejaVu Sans Mono,monospace" font-size="13" letter-spacing="1"><text x="60" y="315">01 / PROMPT</text><text x="300" y="315">02 / KEYCAP</text><text x="540" y="315">03 / ORBIT</text><text x="780" y="315">04 / MONOGRAM</text></g>
+  <text x="35" y="397" fill="#d7e2d5" font-family="JetBrains Mono,IBM Plex Mono,DejaVu Sans Mono,monospace" font-size="16">[ &gt;_ ]  SMALL UI      [ K ]  APP ICON      [ ◌ ]  MILESTONE      [ × ]  SEAL</text>
+</svg>

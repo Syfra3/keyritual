@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Keyritual ritual key logomark</title><desc id="desc">Original vector interpretation of the provided moodboard: glowing orbital seal, six key nodes and a central tilted K keycap.</desc>
+  <defs>
+    <radialGradient id="disk"><stop stop-color="#243536"/><stop offset=".7" stop-color="#172127"/><stop offset="1" stop-color="#0b1218"/></radialGradient>
+    <linearGradient id="orbit" x1=".1" y1=".1" x2=".9" y2=".9"><stop stop-color="#a7e8bc"/><stop offset=".48" stop-color="#c6e7b5"/><stop offset="1" stop-color="#edaa77"/></linearGradient>
+    <linearGradient id="face" x2="1" y2="1"><stop stop-color="#29473e"/><stop offset="1" stop-color="#35423b"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="7"/></filter><filter id="shadow"><feDropShadow dx="0" dy="12" stdDeviation="16" flood-opacity=".6"/></filter>
+  </defs>
+  <circle cx="320" cy="320" r="288" fill="url(#disk)" stroke="#35474a" stroke-width="2"/>
+  <g fill="none" stroke="url(#orbit)" stroke-width="6" opacity=".48" filter="url(#glow)"><circle cx="320" cy="320" r="201"/><circle cx="320" cy="320" r="173"/><path d="M147 219 320 116 493 219v202L320 524 147 421Z"/></g>
+  <g fill="none" stroke="url(#orbit)" stroke-width="3"><circle cx="320" cy="320" r="201"/><circle cx="320" cy="320" r="173"/><path d="M147 219 320 116 493 219v202L320 524 147 421Z" opacity=".75"/><path d="M120 320h400M320 115v410M177 177l286 286M463 177 177 463" opacity=".25"/></g>
+  <g fill="#102024" stroke="url(#orbit)" stroke-width="4"><circle cx="320" cy="119" r="24"/><circle cx="494" cy="219" r="24"/><circle cx="494" cy="421" r="24"/><circle cx="320" cy="521" r="24"/><circle cx="146" cy="421" r="24"/><circle cx="146" cy="219" r="24"/></g>
+  <g fill="none" stroke="#c3edc2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m326 107-13 12 13 12"/><path d="m486 210 13 9-13 9Z"/><path d="m485 416 18 5-18 5Z"/><path d="m309 517 11 10 11-10"/><path d="m137 417 18 4-18 4Z"/><circle cx="146" cy="219" r="9"/></g>
+  <g transform="translate(320 320) rotate(-24)" filter="url(#shadow)">
+    <path d="M-91-70-61-91H99l-27 21Z" fill="#638f76" stroke="#a7e8bc" stroke-width="4"/>
+    <path d="M99-91v151L72 87V-70Z" fill="#1c342f" stroke="#edaa77" stroke-width="4"/>
+    <path d="M-91-70H72V87H-91Z" fill="url(#face)" stroke="url(#orbit)" stroke-width="6"/>
+    <path d="M-75-54H55V68H-75Z" fill="none" stroke="#669c83" stroke-width="2"/>
+    <text x="-7" y="36" fill="#f3d49c" text-anchor="middle" font-family="JetBrains Mono,IBM Plex Mono,DejaVu Sans Mono,monospace" font-size="86" font-weight="800">K</text>
+    <circle cx="48" cy="-32" r="8" fill="#edaa77"/><path d="M48-19v17" stroke="#edaa77" stroke-width="5"/>
+  </g>
+  <circle cx="320" cy="320" r="276" fill="none" stroke="#779489" stroke-width="1" stroke-dasharray="2 12" opacity=".42"/>
+</svg>
