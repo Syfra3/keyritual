@@ -1,24 +1,25 @@
 # Keyritual — Omarchy typing practice plan
 
-**Status:** concept and visual mockups; no plugin, binary, or desktop binding has been installed.
+**Status:** Rust engine, Quattro QML overlay, and launcher source implemented; artwork remains concept mockups. The alpha is being tested locally on Omarchy 4.0.4; cross-theme and narrow-display acceptance remains incomplete.
 
-**Target:** Omarchy Quattro / 4.x with the `omarchy-shell` plugin system. The research machine runs Omarchy 3.8.5, where `omarchy plugin` and `omarchy-shell` are not available.
+**Target:** Omarchy Quattro / 4.x with the `omarchy-shell` plugin system. The current test machine runs Omarchy 4.0.4; Omarchy 3.x lacks the required plugin shell.
 
-**Name / proposed ID:** Keyritual / `io.github.syfra3.keyritual` (reserve this final ID when implementing the manifest). See [the visual brand system](BRAND.md) for the logomark, iconography, typography and color tokens.
+**Name / plugin ID:** Keyritual / `io.github.syfra3.keyritual`. See [the visual brand system](BRAND.md) for the logomark, iconography, typography and color tokens.
 
 ## References and product direction
 
-- [OmaType](https://github.com/jamesd7788/omatype): a good proof of concept for an Omarchy-native typing strip, theming, keyboard focus, and per-length records. It deliberately ends on the first mistake and does not support Backspace; Keyritual will offer a forgiving default and a strict option.
-- [Raycast Monkeytype extension at the requested commit](https://github.com/raycast/extensions/tree/2b7f8341a1500ec36b9b3ff7b0cc1079f11d989d/extensions/monkeytype/): a launcher that opens pages on monkeytype.com. It is **not** a local typing engine. Take inspiration from the Monkeytype *experience* (modes, feedback, statistics), rather than porting its Raycast implementation or assuming Monkeytype API integration.
+- [Monkeytype](https://monkeytype.com/): **primary product inspiration** for the quick, customizable typing experience, modes, live feedback, and progress. Keyritual remains an original local implementation rather than a port or account integration.
+- [OmaType](https://github.com/jamesd7788/omatype): **technical Omarchy reference** for plugin shell, theming, keyboard focus, and records. Its one-line strict typing strip is not the Keyritual product model.
+- [Raycast Monkeytype extension at the requested commit](https://github.com/raycast/extensions/tree/2b7f8341a1500ec36b9b3ff7b0cc1079f11d989d/extensions/monkeytype/): only a launcher that opens pages on monkeytype.com, **not** a local typing engine.
 - [Quattro plugin guide](https://github.com/omacom/omarchy/blob/quattro/manual/32-shell-plugins.md), [shell contract](https://github.com/omacom/omarchy/blob/quattro/docs/omarchy-shell.md), and [marketplace publishing guide](https://plugins.omarchy.org/publish.html): one root-level plugin manifest and QML entry point hosted by the existing shell; no second Quickshell process.
 
 ## Proposed experience
 
 1. Invoke via the Omarchy menu, or assign a user-selected Hyprland hotkey to `omarchy-shell shell toggle io.github.syfra3.keyritual '{}'`. No keybinding is installed or overwritten by the plugin.
-2. A centered, theme-aware overlay takes keyboard focus. Choose **time** (15 / 30 / 60 s) or **words** (10 / 25 / 50), with punctuation/numbers optional. The default is 30 seconds, English, forgiving mode.
-3. Type immediately. The clock begins on the first printable character; each glyph shows correct/incorrect state, the active word is highlighted, and a small live WPM/accuracy readout stays visible. Backspace corrects errors; Tab restarts; Escape closes and releases focus. Avoid capturing global keystrokes while hidden.
-4. A results card shows WPM, raw WPM, accuracy, consistency, an error heatmap, a session timeline, and personal best for the selected mode. `Enter` starts another round. History and settings are local only; no Monkeytype account or network connection.
-5. Optional later: code and quote modes, custom text, language packs, practice based on missed keys, export/import, and an opt-in compact bar launcher. The typing surface stays roomy even if invoked from the bar.
+2. A centered, theme-aware overlay takes keyboard focus. Choose **time** (15 / 30 / 60 s) or **words** (10 / 25 / 50), with punctuation/numbers switches. The default is 30 seconds, English, forgiving mode.
+3. Type immediately. The clock begins on the first printable character; each glyph shows correct/incorrect state, the active word is highlighted, and a small live WPM/accuracy readout stays visible. Backspace corrects errors; Tab restarts; a clickable Commands control exposes options; clicking outside dismisses. Avoid capturing global keystrokes while hidden.
+4. The current results state shows WPM, raw WPM, accuracy, animated real pace, consistency, prior comparable runs, personal best, and a dated history menu (new records include error counts; legacy rows show unavailable). An explicit X compose preview only includes rounded current score and mode/limit. `Enter` starts another round. An error heatmap, missed-key coaching, and broader cross-session analytics remain on the roadmap. History is local only; no Monkeytype account or network connection.
+5. Optional later: code and quote modes, custom text, language packs, practice based on missed keys, export/import, persisted preferences, and an opt-in compact bar launcher. The typing surface stays roomy even if invoked from the bar.
 
 ## Visual walkthrough
 
@@ -27,7 +28,7 @@ These are **design mockups**, not screenshots of a working plugin. Open the SVGs
 | Step | Image | Action |
 | --- | --- | --- |
 | 1. Launch | [01-launch.svg](images/01-launch.svg) | On Quattro, invoke the shell toggle command or add it to your preferred user keybinding. |
-| 2. Practice | [02-practice.svg](images/02-practice.svg) | Pick a mode, type, correct with Backspace, restart with Tab, dismiss with Escape. |
+| 2. Practice | [02-practice.svg](images/02-practice.svg) | Pick a mode, type, correct with Backspace, restart with Tab, dismiss by clicking outside. |
 | 3. Review | [03-results.svg](images/03-results.svg) | Inspect speed and accuracy, then press Enter for another attempt. |
 
 ![Concept: summon the plugin](images/01-launch.svg)
@@ -49,10 +50,10 @@ Omarchy Quattro shell (already running)
   └── Keyritual.qml  [overlay: drawing, focus, key events, theme tokens]
          ⇅ newline-delimited JSON via Quickshell.Io Process stdin/stdout
       keyritual-core serve  [Rust: prompt generation, state, timing, scoring, history]
-         └── $XDG_STATE_HOME/keyritual/history.json + settings.json
+         └── $XDG_STATE_HOME/keyritual/history.json
 ```
 
-- The **Rust core** owns test state, seeded word selection, scoring, mode rules, timekeeping using a monotonic clock, and persistence. QML is a thin presentation/input adapter. Use `serde`/`serde_json` for versioned JSON-line commands (`start`, `key`, `backspace`, `tick`, `finish`, `settings`) and responses (`session`, `progress`, `result`, `error`). A session ID and sequence number prevent late responses from a previous run changing the current view.
+- The **Rust core** owns test state, seeded word selection, scoring, mode rules, monotonic timekeeping, and bounded record persistence. QML is a thin presentation/input adapter. `serde`/`serde_json` handle newline-delimited commands (`start`, `key`, `backspace`, `tick`) and responses (`state`, `error`). Request IDs let the UI discard stale responses after a restart.
 - Run one Rust child **only while the overlay is active** (or retain it for quick repeated runs); communicate through Quickshell's `Process` stdin/stdout with line-delimited messages. Never spawn a subprocess per keystroke. On exit/crash, show a retry state and return focus cleanly. Confirm the installed Quickshell version and its `Process` APIs on the 4.x test machine before implementation.
 - Use an Omarchy `overlay` entry point with `open(payloadJson)` / `close()`, `kinds: ["overlay"]`, and optional `keepLoaded: true`. Follow the built-in emoji/reminders overlay patterns for focus and theme tokens. The shell owns the surface; no changes to Omarchy source. Support high DPI, narrow displays, reduced motion, and high-contrast themes.
 - Store user data under XDG state/config directories with atomic writes; bound history size and avoid retaining the exact text the user typed unless they explicitly opt in. No keylogging or cloud sync.
@@ -67,7 +68,7 @@ Cargo.toml               # Rust binary package in the same repo
 Cargo.lock
 src/main.rs              # JSONL server / CLI entry point
 src/engine.rs            # deterministic test state and scoring
-src/storage.rs           # settings, PBs, bounded history
+src/storage.rs           # PBs and bounded history
 assets/                  # licensed word lists, original icons
 images/                  # brand marks, preview and usage illustrations
 BRAND.md                 # typography, logo and iconography system
@@ -81,9 +82,9 @@ preview.png              # optional marketplace preview (real screenshot later)
 | Milestone | Deliverable | Acceptance check |
 | --- | --- | --- |
 | 0. Compatibility spike | Verify Quattro shell/Quickshell versions, overlay focus, stdin/stdout bridge, theme tokens on a 4.x installation. | Toggle overlay twice; keystrokes reach it only while open; no second shell process. |
-| 1. Rust engine | Timed and word-count sessions, seeded prompts, forgiving/strict modes, scoring and record persistence. | Unit/property tests cover first-key timing, errors and corrections, timer expiry, empty attempts, rapid restart, XDG storage migration. |
-| 2. Native UI | Focused overlay, responsive text layout, color states, mode selector, result card. | Manual tests across two Omarchy themes, at two display scales and narrow widths; no lost keystrokes during normal typing. |
-| 3. Packaging | Root manifest, reproducible Cargo build, usage docs and removal instructions. | `omarchy plugin validate .`; install from a public test repo; local binary discoverable; uninstall leaves no auto-start process. |
+| 1. Rust engine | Implemented timed/word-count sessions, punctuation/numbers, forgiving/strict modes, scoring and record persistence. | Rust unit tests and isolated JSONL round-trips pass; add further storage edge-case tests as usage grows. |
+| 2. Native UI | QML overlay source, theme tokens, focus, mode selector and result state implemented. | Manual tests across two Omarchy themes, at two display scales and narrow widths; no lost keystrokes during normal typing (partially exercised on Quattro; broader display/theme pass pending). |
+| 3. Packaging | Root manifest, reproducible Cargo build, optional app launcher and removal instructions implemented. | Staged plugin validation and app launcher exercised locally; external marketplace installation and broader compatibility pending. |
 | 4. Release | Real preview screenshot, accessibility pass, license/asset audit, marketplace submission. | Public repository and submission issue pass marketplace validation; maintainer approval before listing. |
 
 ## Installation and publication path (after implementation, on Quattro)

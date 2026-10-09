@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Keyritual
+GenericName=Typing Practice
+Comment=Daily typing practice for Omarchy
+Exec=keyritual-core launch
+Icon=keyritual
+Terminal=false
+StartupNotify=false
+Categories=Education;
+Keywords=typing;practice;wpm;keyboard;omarchy;

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.syfra3.keyritual",
+  "name": "Keyritual",
+  "version": "0.1.0-alpha.1",
+  "author": "Syfra3",
+  "description": "A native typing-practice ritual with a Rust engine, local records, and an Omarchy-themed overlay.",
+  "license": "MIT",
+  "homepage": "https://github.com/Syfra3/keyritual",
+  "kinds": ["overlay"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "Keyritual.qml"
+  }
+}
