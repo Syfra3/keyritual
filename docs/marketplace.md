@@ -11,6 +11,6 @@
 - Launch: `omarchy-shell shell toggle io.github.syfra3.keyritual '{}'`; marketplace installation does not add an app-list shortcut.
 - Remove: `omarchy plugin remove io.github.syfra3.keyritual`; session history remains at `${XDG_STATE_HOME:-$HOME/.local/state}/keyritual/history.json` unless the user separately chooses to delete it.
 - Data and permissions: typing remains local in the Rust engine; only the explicit `Open X compose` click opens an external browser with rounded score and mode. Plugins run unsandboxed. No user config is overwritten by plugin code; local `make install` is a separate opt-in installer that backs up recognized previous Keyritual files and refuses unknown contents.
-- Optional preview: do not submit concept mockups as real UI screenshots; add a consent-reviewed actual screenshot if desired.
+- Root preview: `preview.png` is a cropped real Reflect-screen capture; `images/practice-live.png` and `images/reflect-live.png` show real UI. Concept images remain clearly labeled separately.
 
 Known prerelease gaps: the bundled binary is x86_64/glibc-specific; real clean-clone UI, History/Share across display sizes and external-share browser navigation still need broader live validation. No separate release binary asset is provided. The user explicitly accepted these gaps for prerelease submission. Marketplace maintainer approval is separate from the issue and is not a security review.

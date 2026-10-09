@@ -6,7 +6,7 @@
 
 **Native typing practice for Omarchy.** Build a steady rhythm, learn from mistakes, and make daily practice feel like a small terminal ritual.
 
-> **Status: v0.1.0-alpha.1 prerelease.** The Rust engine, Quattro overlay and local installer have been exercised on Omarchy 4.0.4. The images below are concept mockups, not current UI screenshots; visual/accessibility behavior across displays and themes remains unverified.
+> **Status: v0.1.0-alpha.1 prerelease.** The Rust engine, Quattro overlay and local installer have been exercised on Omarchy 4.0.4. The screenshots below show the actual alpha UI; the later Summon/Practice/Reflect illustrations are concept mockups. Visual/accessibility behavior across displays and themes remains unverified.
 
 ## Build and test
 
@@ -56,6 +56,14 @@ Check that the chord is unused before adding it. This repository never changes y
 **Controls:** Click the mode, limit, strict, punctuation or numbers labels to change settings. Click **Commands** for letter controls (`m` mode, `t` limit, `s` strict, `p` punctuation, `n` numbers, `r` restart, `q` close); click **Typing** to return. Tab restarts; Backspace corrects; Enter repeats a completed run; clicking outside closes. Ctrl+M may toggle command mode where the shell passes that shortcut through; prefer the clickable controls. Timing starts on the first printable key. Strict mode ends at the first mistake.
 
 To remove a marketplace install, use `omarchy plugin remove io.github.syfra3.keyritual` (it does not remove history). For a manual install, disable the plugin with `omarchy plugin disable io.github.syfra3.keyritual`, remove its user-owned directory under `~/.config/omarchy/plugins/`, then run `cargo uninstall keyritual-core` and remove the desktop entry and icon under `~/.local/share/applications/io.github.syfra3.keyritual.desktop` and `~/.local/share/icons/hicolor/512x512/apps/keyritual.png`. Your local record file is at `${XDG_STATE_HOME:-$HOME/.local/state}/keyritual/history.json`; delete it only if you also want to discard your history.
+
+## Screenshots (actual alpha UI)
+
+| Practice | Reflect |
+| :---: | :---: |
+| <img src="images/practice-live.png" alt="Keyritual practice popup showing a three-line typing passage" width="600"/> | <img src="images/reflect-live.png" alt="Keyritual reflect popup showing WPM, accuracy, pace and previous-session comparison" width="600"/> |
+
+The marketplace root [`preview.png`](preview.png) uses the cropped Reflect screenshot. These images exclude the desktop clock and other windows; recorded score values are from a real local session, not sample values.
 
 ## The ritual
 
