@@ -69,7 +69,7 @@ pub struct Snapshot {
     pub consistency: Option<u32>,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Command {
     Start {
@@ -87,6 +87,13 @@ pub enum Command {
     Backspace,
     Tick,
     History,
+    GetPreferences,
+    SetCommandKey {
+        key: String,
+    },
+    SetShortcutPrompted {
+        value: bool,
+    },
 }
 
 #[derive(Debug)]
@@ -225,7 +232,12 @@ impl Session {
             Command::Backspace => {
                 self.typed.pop();
             }
-            Command::Tick | Command::Start { .. } | Command::History => {}
+            Command::Tick
+            | Command::Start { .. }
+            | Command::History
+            | Command::GetPreferences
+            | Command::SetCommandKey { .. }
+            | Command::SetShortcutPrompted { .. } => {}
         }
         self.sample_pace(now);
     }

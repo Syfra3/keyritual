@@ -11,6 +11,10 @@ fn blank_lines_are_ignored_but_invalid_nonblank_json_is_reported() {
             "XDG_STATE_HOME",
             std::env::temp_dir().join(format!("keyritual-empty-state-{}", std::process::id())),
         )
+        .env(
+            "XDG_CONFIG_HOME",
+            std::env::temp_dir().join(format!("keyritual-empty-config-{}", std::process::id())),
+        )
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
