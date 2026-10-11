@@ -16,29 +16,22 @@ Item {
     property bool enabledControl: true
     property real scaleFactor: 1
     signal activated()
-    width: labelText.implicitWidth + 8 * scaleFactor
-    height: labelText.implicitHeight + 8 * scaleFactor
-    radius: 2 * scaleFactor
+    width: Math.max(44 * scaleFactor, labelText.implicitWidth + 22 * scaleFactor)
+    height: 44 * scaleFactor
+    radius: 4 * scaleFactor
     opacity: enabledControl ? 1 : 0.48
-    color: selected ? "#234638" : (pointer.containsMouse && enabledControl ? "#223039" : "transparent")
-    border.width: 0
+    color: primary ? (pointer.containsMouse && enabledControl ? "#d7e2d5" : "#a7e8bc") : (selected ? "#234638" : (pointer.containsMouse && enabledControl ? "#223039" : "#111d22"))
+    border.color: primary || selected ? "#a7e8bc" : (pointer.containsMouse && enabledControl ? "#779489" : "#46615f")
+    border.width: 1
     Accessible.role: Accessible.Button
     Accessible.name: label
     Text {
       id: labelText
       anchors.centerIn: parent
       text: button.label
-      color: button.selected || button.primary || (pointer.containsMouse && button.enabledControl) ? "#a7e8bc" : "#d7e2d5"
+      color: button.primary ? "#080e13" : (button.selected ? "#a7e8bc" : "#d7e2d5")
       font.family: Style.font.menuFamily
       font.pixelSize: 12 * button.scaleFactor
-    }
-    Rectangle {
-      anchors.bottom: parent.bottom
-      anchors.horizontalCenter: parent.horizontalCenter
-      width: labelText.implicitWidth
-      height: Math.max(1, scaleFactor)
-      color: "#a7e8bc"
-      visible: button.enabledControl && (button.selected || pointer.containsMouse)
     }
     MouseArea {
       id: pointer
@@ -61,7 +54,6 @@ Item {
   property string bindingMessage: ""
   property int pendingBinding: 0
   property bool globalPromptOpen: false
-  property bool globalPromptYesSelected: false
   property bool promptedThisOpen: false
   property bool globalShortcutPrompted: false
   property bool installAfterPrompt: false
@@ -116,7 +108,6 @@ Item {
     captureBinding = false
     bindingMessage = ""
     globalPromptOpen = false
-    globalPromptYesSelected = false
     promptedThisOpen = false
     globalShortcutStatus = ""
     historyOpen = false
@@ -210,19 +201,12 @@ Item {
       bindingMessage = message.warning || (message.id === pendingBinding ? "Shortcut saved: " + shortcutLabel : "")
       if (message.id === pendingGlobalPrompt) {
         pendingGlobalPrompt = 0
-        if (globalShortcutPrompted && installAfterPrompt) {
-          installAfterPrompt = false
+        if (installAfterPrompt) {
           globalShortcutStatus = "Verificando atajo y creando respaldo..."
           hotkeyInstall.running = true
-        } else if (globalShortcutPrompted) {
-          installAfterPrompt = false
-          globalPromptOpen = false
-        } else {
-          installAfterPrompt = false
-          globalShortcutStatus = "No se pudo guardar la decisión del atajo"
-        }
+        } else globalPromptOpen = false
+        installAfterPrompt = false
       } else if (!globalShortcutPrompted && opened && !promptedThisOpen) {
-        globalPromptYesSelected = false
         globalPromptOpen = true
         promptedThisOpen = true
       }
@@ -243,7 +227,7 @@ Item {
   }
 
   function answerGlobalShortcut(accepted) {
-    if (!globalPromptOpen || pendingGlobalPrompt !== 0 || hotkeyInstall.running || !engine.running || globalShortcutPrompted) return
+    if (pendingGlobalPrompt !== 0 || hotkeyInstall.running || !engine.running) return
     installAfterPrompt = accepted
     globalShortcutStatus = "Guardando decisión..."
     pendingGlobalPrompt = send({ type: "set_shortcut_prompted", value: true })
@@ -393,19 +377,7 @@ Item {
         Keys.priority: Keys.BeforeItem
         Keys.onPressed: function(event) {
           if (root.globalPromptOpen) {
-            if (root.pendingGlobalPrompt === 0 && !hotkeyInstall.running &&
-                !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
-              if (event.key === Qt.Key_Left || event.key === Qt.Key_Up) root.globalPromptYesSelected = false
-              else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down) root.globalPromptYesSelected = true
-              else if (event.key === Qt.Key_Escape || event.key === Qt.Key_N) {
-                if (root.globalShortcutPrompted) root.globalPromptOpen = false
-                else root.answerGlobalShortcut(false)
-              } else if (event.key === Qt.Key_Y) root.answerGlobalShortcut(true)
-              else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                if (root.globalShortcutPrompted) root.globalPromptOpen = false
-                else root.answerGlobalShortcut(root.globalPromptYesSelected)
-              }
-            }
+            if (event.key === Qt.Key_Escape && !hotkeyInstall.running && root.pendingGlobalPrompt === 0) root.answerGlobalShortcut(false)
             event.accepted = true
             return
           }
@@ -491,7 +463,7 @@ Item {
           Text {
             text: root.commandMode ? "M MODE · T LIMIT · S STRICT · P PUNCT · N NUMBERS · R RESTART · Q QUIT" : "SESSION / PRACTICE · FOCUS: ACTIVE"
             color: root.muted; font.family: root.fontFamily; font.pixelSize: 12 * root.uiScale
-            height: implicitHeight + 8 * root.uiScale; verticalAlignment: Text.AlignVCenter
+            height: 44 * root.uiScale; verticalAlignment: Text.AlignVCenter
           }
         }
         Text {
@@ -728,6 +700,7 @@ Item {
         }
         ActionButton {
           scaleFactor: root.uiScale
+          width: Math.min(parent.width, 294 * root.uiScale)
           x: parent.width - width
           label: "[ ENTER ] TRY AGAIN"
           primary: true
@@ -761,7 +734,7 @@ Item {
           Flow {
             width: parent.width
             spacing: 12 * root.uiScale
-            Text { text: root.historyOpen ? "SESSION HISTORY / LATEST 20" : "SHARE RESULT / LOCAL PREVIEW"; color: root.accent; font.family: root.fontFamily; font.pixelSize: 16 * root.uiScale; font.bold: true; height: implicitHeight + 8 * root.uiScale; verticalAlignment: Text.AlignVCenter }
+            Text { text: root.historyOpen ? "SESSION HISTORY / LATEST 20" : "SHARE RESULT / LOCAL PREVIEW"; color: root.accent; font.family: root.fontFamily; font.pixelSize: 16 * root.uiScale; font.bold: true; height: 44 * root.uiScale; verticalAlignment: Text.AlignVCenter }
             ActionButton {
               scaleFactor: root.uiScale; label: "[ CLOSE ]"
               onActivated: { root.historyOpen = false; root.shareOpen = false; keyCatcher.forceActiveFocus() }
@@ -857,25 +830,17 @@ Item {
             color: root.muted; font.family: root.fontFamily; font.pixelSize: 12 * root.uiScale
             wrapMode: Text.Wrap
           }
-          Text {
-            width: parent.width
-            text: "←/↑ No · →/↓ Sí · Enter confirma · N/Escape rechaza · Y acepta"
-            color: root.muted; font.family: root.fontFamily; font.pixelSize: 12 * root.uiScale
-            wrapMode: Text.Wrap
-          }
           Flow {
             width: parent.width
             spacing: 12 * root.uiScale
             ActionButton {
               scaleFactor: root.uiScale; label: "[ NO, GRACIAS / CERRAR ]"
-              selected: !root.globalPromptYesSelected
               enabledControl: root.pendingGlobalPrompt === 0 && !hotkeyInstall.running
               onActivated: { if (root.globalShortcutPrompted) root.globalPromptOpen = false; else root.answerGlobalShortcut(false) }
             }
             ActionButton {
-              scaleFactor: root.uiScale; label: "[ SÍ, AGREGAR ATAJO ]"
-              selected: root.globalPromptYesSelected
-              enabledControl: !root.globalShortcutPrompted && root.pendingGlobalPrompt === 0 && !hotkeyInstall.running
+              scaleFactor: root.uiScale; label: "[ SÍ, AGREGAR ATAJO ]"; primary: true
+              enabledControl: root.pendingGlobalPrompt === 0 && !hotkeyInstall.running
               onActivated: root.answerGlobalShortcut(true)
             }
           }

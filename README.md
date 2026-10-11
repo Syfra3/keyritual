@@ -6,7 +6,7 @@
 
 **Native typing practice for Omarchy.** Build a steady rhythm, learn from mistakes, and make daily practice feel like a small terminal ritual.
 
-> **Status: v0.1.0-alpha.1 prerelease.** The Rust engine, Quattro overlay and local installer have been exercised on Omarchy 4.0.4. The screenshots below show the actual alpha UI; the later Summon/Practice/Reflect illustrations are concept mockups. Visual/accessibility behavior across displays and themes remains unverified.
+> **Status: v0.1.0 stable source release.** Earlier engine, overlay and installer paths were exercised on Omarchy 4.0.4; the current controls and first-open shortcut effect against real user configuration have not been live-verified. Screenshots show an earlier real UI; Summon/Practice/Reflect illustrations are concept mockups. Pointer/keyboard behavior, narrow viewports and accessibility across displays/themes remain unverified.
 
 ## Build and test
 
@@ -30,7 +30,7 @@ To smoke-test `make run-engine`, enter `{"id":1,"type":"start","mode":"words","l
 omarchy plugin add https://github.com/Syfra3/keyritual.git --enable
 ```
 
-The repository includes an executable `bin/keyritual-core` beside the QML plugin. No Cargo build, install hook, credentials, or privileged command runs when Omarchy clones it. Summon it with `omarchy-shell shell toggle io.github.syfra3.keyritual '{}'` (or bind that command yourself). Marketplace installation does **not** add an app-list launcher. This alpha bundle targets **x86_64 Linux with a compatible glibc**; ARM and older incompatible glibc are not supported. If the binary cannot start, the overlay shows an actionable error. The plugin stores completed history in XDG state outside its install directory.
+The repository includes an executable `bin/keyritual-core` beside the QML plugin. No Cargo build, install hook, credentials, or privileged command runs when Omarchy clones it. Summon it with `omarchy-shell shell toggle io.github.syfra3.keyritual '{}'`. On the first open, Keyritual can **ask** whether you want the optional `Super+Shift+K` global shortcut; declining changes no Hyprland file. Accepting runs a bundled user-local script that refuses occupied/unknown bindings, backs up your existing `~/.config/hypr/bindings.lua`, appends one marked binding and verifies Hyprland reload (restoring the backup on failure). Marketplace installation does **not** add an app-list launcher. This bundle targets **x86_64 Linux with a compatible glibc**; ARM and older incompatible glibc are not supported. If the binary cannot start, the overlay shows an actionable error. The plugin stores completed history in XDG state outside its install directory.
 
 **Manual install from a checkout** (also installs a desktop app launcher):
 
@@ -48,16 +48,16 @@ After the manual install, you can launch from the **searchable app list** as “
 For an **optional keybinding**, assign a free shortcut to `keyritual-core launch` in your user-owned `~/.config/hypr/bindings.lua`. For example, on Quattro:
 
 ```lua
-o.bind("SUPER + SHIFT + K", "Keyritual", os.getenv("HOME") .. "/.cargo/bin/keyritual-core launch")
+o.bind("SUPER + SHIFT + K", "Keyritual", "omarchy-shell shell toggle io.github.syfra3.keyritual '{}'")
 ```
 
-Check that the chord is unused before adding it. This repository never changes your bindings automatically. The same `launch` command toggles the overlay, so the app launcher and hotkey lead to the same experience.
+Check `omarchy menu keybindings --print` to confirm the chord is free before adding it. Hyprland loads `~/.config/hypr/bindings.lua` automatically; after editing, check `hyprctl reload` and `hyprctl configerrors`. Outside the explicit first-open Yes choice, this repository never changes your global bindings automatically. The shell toggle command works for both marketplace and manual installs; the app-list launcher is available only after manual installation.
 
-**Controls:** Click the mode, limit, strict, punctuation or numbers labels to change settings. Click **Commands** for letter controls (`m` mode, `t` limit, `s` strict, `p` punctuation, `n` numbers, `r` restart, `q` close); click **Typing** to return. Tab restarts; Backspace corrects; Enter repeats a completed run; clicking outside closes. Ctrl+M may toggle command mode where the shell passes that shortcut through; prefer the clickable controls. Timing starts on the first printable key. Strict mode ends at the first mistake.
+**Controls:** Mode, limit, strict, punctuation, numbers, history, share, animation, restart and popup close are visible mouse buttons with hover/active feedback; typing the passage still uses the keyboard. The practice header shows **Commands · Ctrl+M** (the default) and a clickable **Rebind command shortcut** control. Click it, then press Ctrl+A–Z or Ctrl+Space to save a different entry/exit chord; Escape cancels. The setting persists in `${XDG_CONFIG_HOME:-$HOME/.config}/keyritual/preferences.json`. Hyprland/shell-reserved shortcuts may not reach the overlay; clicking Commands/Typing always works. Inside command mode the fixed letters remain `m` mode, `t` limit, `s` strict, `p` punctuation, `n` numbers, `r` restart, `q` close. Tab restarts; Backspace corrects; Enter repeats a completed run; clicking outside closes. Timing starts on the first printable key. Strict mode ends at the first mistake. The global launch shortcut above is separate from this in-overlay command shortcut.
 
-To remove a marketplace install, use `omarchy plugin remove io.github.syfra3.keyritual` (it does not remove history). For a manual install, disable the plugin with `omarchy plugin disable io.github.syfra3.keyritual`, remove its user-owned directory under `~/.config/omarchy/plugins/`, then run `cargo uninstall keyritual-core` and remove the desktop entry and icon under `~/.local/share/applications/io.github.syfra3.keyritual.desktop` and `~/.local/share/icons/hicolor/512x512/apps/keyritual.png`. Your local record file is at `${XDG_STATE_HOME:-$HOME/.local/state}/keyritual/history.json`; delete it only if you also want to discard your history.
+To remove a marketplace install, use `omarchy plugin remove io.github.syfra3.keyritual` (it does not remove history). For a manual install, disable the plugin with `omarchy plugin disable io.github.syfra3.keyritual`, remove its user-owned directory under `~/.config/omarchy/plugins/`, then run `cargo uninstall keyritual-core` and remove the desktop entry and icon under `~/.local/share/applications/io.github.syfra3.keyritual.desktop` and `~/.local/share/icons/hicolor/512x512/apps/keyritual.png`. Your local record file is at `${XDG_STATE_HOME:-$HOME/.local/state}/keyritual/history.json`; the optional shortcut preference is at `${XDG_CONFIG_HOME:-$HOME/.config}/keyritual/preferences.json`. Delete either only if you explicitly want to discard that data.
 
-## Screenshots (actual alpha UI)
+## Screenshots (earlier real UI)
 
 | Practice | Reflect |
 | :---: | :---: |
@@ -77,7 +77,7 @@ The marketplace root [`preview.png`](preview.png) uses the cropped Reflect scree
 
 ## Brand kit
 
-The visual language pairs a dark graph-paper grid and bracketed terminal typography with a mint-and-ember **ritual key**. The logo and icons are original vector interpretations of the supplied visual reference; they are not an exact trace. The current alpha uses the supplied void/surface/mint/chalk palette; theme adaptation is future work.
+The visual language pairs a dark graph-paper grid and bracketed terminal typography with a mint-and-ember **ritual key**. The logo and icons are original vector interpretations of the supplied visual reference; they are not an exact trace. The current UI uses the supplied void/surface/mint/chalk palette; theme adaptation is future work.
 
 | Logomark | Iconography | Typography and palette |
 | :---: | :---: | :---: |
@@ -92,7 +92,7 @@ Editable SVGs and PNG previews live in [`images/`](images/). See [BRAND.md](BRAN
 - **Local by default:** no Monkeytype account or global keystroke capture; only an explicit Open X compose click opens an external URL with rounded score/mode/limit.
 - **Distribution:** one Quattro plugin manifest at the repo root, the tracked x86_64 engine in `bin/`, and an optional XDG app launcher from manual installation. The installer validates its staged plugin on Omarchy 4.x; no marketplace listing is included in this release.
 
-The feature sequence and remaining acceptance checks are in [PLAN.md](PLAN.md). The plugin ID is `io.github.syfra3.keyritual`. This early version has no language packs or missed-key coaching yet. Finished-session history is local, bounded to 200 runs, with the newest 20 shown in the History menu. Real pace/error history and X compose need a live UI/privacy check before public release.
+The feature sequence and remaining acceptance checks are in [PLAN.md](PLAN.md). The plugin ID is `io.github.syfra3.keyritual`. This early version has no language packs or missed-key coaching yet. Finished-session history is local, bounded to 200 runs, with the newest 20 shown in the History menu. Real pace/error history, X compose, current controls and first-open shortcut effects still need live UI/privacy checks; stable version numbering does not establish these checks. See [v0.1.0 release notes](docs/releases/v0.1.0.md).
 
 For marketplace submission metadata, compatibility and remaining checks, see [docs/marketplace.md](docs/marketplace.md). A submitted issue is not an approved marketplace listing.
 

@@ -11,7 +11,8 @@ trap 'rm -rf -- "$tmp"' EXIT
 install -m644 "$root/manifest.json" "$root/Keyritual.qml" "$tmp/"
 install -m644 "$root/assets/keyritual-seal.png" "$tmp/keyritual-seal.png"
 install -Dm755 "$root/bin/keyritual-core" "$tmp/bin/keyritual-core"
-[[ -x "$tmp/bin/keyritual-core" ]]
+install -Dm755 "$root/scripts/install-hotkey.sh" "$tmp/scripts/install-hotkey.sh"
+[[ -x "$tmp/bin/keyritual-core" && -x "$tmp/scripts/install-hotkey.sh" ]]
 expected="$(awk -F '"' '/^version = / { print $2; exit }' "$root/Cargo.toml")"
 [[ "$("$tmp/bin/keyritual-core" --version)" == "keyritual-core $expected" ]]
 if command -v omarchy >/dev/null 2>&1; then

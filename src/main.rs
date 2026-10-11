@@ -1,5 +1,6 @@
 use keyritual_core::{
     engine::{Command as Input, Phase, Session},
+    preferences::Preferences,
     storage::Store,
 };
 use serde::Deserialize;
@@ -54,6 +55,8 @@ fn run() -> Result<(), Box<dyn Error>> {
 fn serve() -> Result<(), Box<dyn Error>> {
     let path = Store::state_path()?;
     let mut store = Store::load(&path)?;
+    let preferences_path = Preferences::path()?;
+    let (mut preferences, mut preferences_invalid) = Preferences::load(&preferences_path);
     let mut session: Option<Session> = None;
     let stdin = io::stdin();
     let mut stdout = io::stdout().lock();
@@ -96,7 +99,80 @@ fn serve() -> Result<(), Box<dyn Error>> {
                 continue;
             }
         };
-        if matches!(request.command, Input::History) {
+        if matches!(&request.command, Input::GetPreferences) {
+            writeln!(
+                stdout,
+                "{}",
+                json!({ "type": "preferences", "id": request.id,
+                "command_key": preferences.command_key,
+                "global_shortcut_prompted": preferences.global_shortcut_prompted,
+                "warning": if preferences_invalid { "Invalid preferences; using Ctrl+M" } else { "" } })
+            )?;
+            stdout.flush()?;
+            continue;
+        }
+        if let Input::SetCommandKey { key } = &request.command {
+            if !Preferences::valid_key(key) {
+                writeln!(
+                    stdout,
+                    "{}",
+                    json!({ "type": "error", "id": request.id,
+                    "message": "Shortcut must be Ctrl+letter or Ctrl+Space" })
+                )?;
+            } else {
+                let next = Preferences {
+                    command_key: key.clone(),
+                    global_shortcut_prompted: preferences.global_shortcut_prompted,
+                };
+                if next.save(&preferences_path).is_err() {
+                    writeln!(
+                        stdout,
+                        "{}",
+                        json!({ "type": "error", "id": request.id,
+                        "message": "Could not save shortcut settings" })
+                    )?;
+                } else {
+                    preferences = next;
+                    preferences_invalid = false;
+                    writeln!(
+                        stdout,
+                        "{}",
+                        json!({ "type": "preferences", "id": request.id,
+                        "command_key": preferences.command_key,
+                        "global_shortcut_prompted": preferences.global_shortcut_prompted, "warning": "" })
+                    )?;
+                }
+            }
+            stdout.flush()?;
+            continue;
+        }
+        if let Input::SetShortcutPrompted { value } = &request.command {
+            let next = Preferences {
+                command_key: preferences.command_key.clone(),
+                global_shortcut_prompted: *value,
+            };
+            if next.save(&preferences_path).is_err() {
+                writeln!(
+                    stdout,
+                    "{}",
+                    json!({ "type": "error", "id": request.id,
+                    "message": "Could not save global shortcut decision" })
+                )?;
+            } else {
+                preferences = next;
+                preferences_invalid = false;
+                writeln!(
+                    stdout,
+                    "{}",
+                    json!({ "type": "preferences", "id": request.id,
+                    "command_key": preferences.command_key,
+                    "global_shortcut_prompted": preferences.global_shortcut_prompted, "warning": "" })
+                )?;
+            }
+            stdout.flush()?;
+            continue;
+        }
+        if matches!(&request.command, Input::History) {
             writeln!(
                 stdout,
                 "{}",
@@ -112,9 +188,9 @@ fn serve() -> Result<(), Box<dyn Error>> {
             strict,
             punctuation,
             numbers,
-        } = request.command
+        } = &request.command
         {
-            match Session::random(mode, limit, strict, punctuation, numbers) {
+            match Session::random(*mode, *limit, *strict, *punctuation, *numbers) {
                 Ok(new_session) => session = Some(new_session),
                 Err(error) => {
                     writeln!(
