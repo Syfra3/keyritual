@@ -1,4 +1,7 @@
-use crate::engine::{Mode, Session};
+use crate::{
+    engine::{Mode, Session},
+    patterns::PatternStats,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     fs, io,
@@ -28,10 +31,76 @@ pub struct Record {
     pub timestamp: u64,
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct Store {
     #[serde(default)]
     pub history: Vec<Record>,
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct PatternStore {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub patterns: PatternStats,
+    #[serde(default)]
+    pub clear_generation: u64,
+}
+
+impl PatternStore {
+    /// Hold this lock while loading, changing, and saving the shared pattern state.
+    pub fn lock(path: &Path, create: bool) -> io::Result<Option<fs::File>> {
+        let parent = path
+            .parent()
+            .ok_or_else(|| io::Error::other("invalid state path"))?;
+        if !pattern_parent_ready(parent, create)? {
+            return Ok(None);
+        }
+        let lock = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(parent.join(".patterns.lock"))?;
+        lock.lock()?;
+        Ok(Some(lock))
+    }
+
+    pub fn load(path: &Path) -> io::Result<Self> {
+        match fs::read(path) {
+            Ok(bytes) => serde_json::from_slice(&bytes).map_err(io::Error::other),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Self::default()),
+            Err(error) => Err(error),
+        }
+    }
+
+    pub fn save(&self, path: &Path) -> io::Result<()> {
+        let parent = path
+            .parent()
+            .ok_or_else(|| io::Error::other("invalid state path"))?;
+        fs::create_dir_all(parent)?;
+        let temporary = parent.join(format!(".patterns-{}.tmp", std::process::id()));
+        fs::write(
+            &temporary,
+            serde_json::to_vec_pretty(self).map_err(io::Error::other)?,
+        )?;
+        if let Err(error) = fs::rename(&temporary, path) {
+            let _ = fs::remove_file(temporary);
+            return Err(error);
+        }
+        Ok(())
+    }
+}
+
+fn pattern_parent_ready(parent: &Path, create: bool) -> io::Result<bool> {
+    if create {
+        fs::create_dir_all(parent)?;
+        return Ok(true);
+    }
+    match fs::metadata(parent) {
+        Ok(metadata) if metadata.is_dir() => Ok(true),
+        Ok(_) => Err(io::Error::other("pattern state parent is not a directory")),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error),
+    }
 }
 
 impl Store {
@@ -159,7 +228,7 @@ impl Store {
         self.save(path)
     }
 
-    fn save(&self, path: &Path) -> io::Result<()> {
+    pub fn save(&self, path: &Path) -> io::Result<()> {
         let parent = path
             .parent()
             .ok_or_else(|| io::Error::other("invalid state path"))?;

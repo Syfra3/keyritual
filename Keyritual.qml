@@ -84,6 +84,14 @@ Item {
   property int serial: 0
   property int pendingStart: 0
   property int lastResponse: 0
+  property bool patternEnabled: false
+  property bool patternKnown: false
+  property bool patternFallback: false
+  property string patternError: ""
+  property string patternNotice: ""
+  property int pendingPatternClear: 0
+  property var pendingPatternRequests: ({})
+  property bool patternOwnsMainError: false
 
   property color background: "#111d22"
   property color foreground: "#d7e2d5"
@@ -111,6 +119,10 @@ Item {
     if (typeof payload.punctuation === "boolean") punctuation = payload.punctuation
     if (typeof payload.numbers === "boolean") numbers = payload.numbers
     errorMessage = ""
+    patternKnown = false
+    pendingPatternRequests = ({})
+    pendingPatternClear = 0
+    patternOwnsMainError = false
     state = ({})
     commandMode = false
     captureBinding = false
@@ -180,6 +192,7 @@ Item {
     graphReveal.stop()
     graphProgress = 1
     errorMessage = ""
+    patternOwnsMainError = false
     pendingStart = send({ type: "start", mode: mode, limit: limit, strict: strict, punctuation: punctuation, numbers: numbers })
     commandMode = false
   }
@@ -192,12 +205,70 @@ Item {
     return next.id
   }
 
+  function patternAction(action) {
+    var requestId = 0
+    if (action === "status") requestId = root.send({ type: "get_pattern_practice" })
+    else if (action === "enable") requestId = root.send({ type: "set_pattern_practice", enabled: true })
+    else if (action === "disable") requestId = root.send({ type: "set_pattern_practice", enabled: false })
+    else if (action === "clear") {
+      root.patternNotice = ""
+      requestId = root.send({ type: "clear_pattern_practice" })
+      root.pendingPatternClear = requestId || 0
+    }
+    else if (action === "targeted" && root.patternEnabled && root.patternKnown !== false)
+      root.send({ type: "start", mode: root.mode, limit: root.limit, strict: root.strict, punctuation: root.punctuation, numbers: root.numbers, targeted: true })
+    if (requestId) {
+      if (!root.pendingPatternRequests) root.pendingPatternRequests = ({})
+      root.pendingPatternRequests[requestId] = action
+    }
+  }
+  function patternResponse(message) {
+    if (message.type === "pattern_practice") {
+      root.patternEnabled = message.enabled === true
+      root.patternKnown = true
+      if (root.patternError && root.errorMessage === root.patternError && root.patternOwnsMainError !== false) root.errorMessage = ""
+      root.patternOwnsMainError = false
+      root.patternError = ""
+      if (root.pendingPatternClear && message.id === root.pendingPatternClear) {
+        root.patternNotice = "Pattern data cleared."
+        root.pendingPatternClear = 0
+      }
+    }
+    else if (message.type === "state") root.patternFallback = message.targeted === true && message.pattern_fallback === true
+    else if (message.type === "error") {
+      root.patternKnown = false
+      root.patternError = message.message || "Pattern practice error"
+      if (root.pendingPatternClear && message.id === root.pendingPatternClear) {
+        root.pendingPatternClear = 0
+        root.patternNotice = ""
+      }
+    }
+  }
+  function patternBehaviorEnd() {}
+
   function receive(line) {
     var message
     try { message = JSON.parse(line) } catch (e) { errorMessage = "Invalid response from Rust engine"; return }
+    var patternRequest = root.pendingPatternRequests && root.pendingPatternRequests[message.id]
+    if (patternRequest && (message.type === "pattern_practice" || message.type === "error")) {
+      delete root.pendingPatternRequests[message.id]
+      patternResponse(message)
+      if (message.type === "error") {
+        root.errorMessage = message.message || "Pattern practice error"
+        root.patternOwnsMainError = true
+      }
+      return
+    }
     if (message.id < pendingStart || message.id < lastResponse) return
     lastResponse = message.id
+    if (typeof patternResponse === "function" && message.type === "state") patternResponse(message)
     if (message.type === "error") {
+      var patternAccessError = message.code === "pattern_state_unavailable" || message.message === "Could not access pattern practice settings"
+      root.patternOwnsMainError = patternAccessError
+      if (patternAccessError) {
+        root.patternKnown = false
+        root.patternError = message.message || "Pattern practice settings unavailable"
+      }
       if (message.id === pendingGlobalPrompt) {
         globalShortcutStatus = message.message || "Could not save shortcut decision"
         pendingGlobalPrompt = 0
@@ -234,7 +305,6 @@ Item {
     else if (message.type === "state") {
       var becameFinished = state.phase !== "finished" && message.phase === "finished"
       state = message
-      errorMessage = ""
       if (becameFinished && graphAnimationEnabled && message.pace_wpm && message.pace_wpm.length > 1) {
         graphProgress = 0
         graphReveal.restart()
@@ -307,7 +377,7 @@ Item {
     stdinEnabled: true
     stdout: SplitParser { onRead: line => root.receive(line) }
     stderr: SplitParser { onRead: line => console.warn("keyritual: " + line) }
-    onStarted: { root.sendStart(); root.send({ type: "get_preferences" }) }
+    onStarted: { root.sendStart(); root.send({ type: "get_preferences" }); root.patternAction("status") }
     onExited: function(code, status) {
       if (root.opened) root.errorMessage = "Keyritual engine unavailable or stopped. Reinstall the plugin (x86_64 Linux/glibc required)."
     }
@@ -527,6 +597,17 @@ Item {
         }
         Rectangle { width: parent.width; height: 1; color: root.borderColor }
         Text {
+          width: parent.width; wrapMode: Text.Wrap
+          text: "Optional coaching: consenting stores local counts of expected letters and pairs from practice, not typed text. Clear them any time. " + (!root.patternKnown ? "Collection status unavailable." : (root.patternEnabled ? "Collection enabled." : "Collection disabled.")) + (root.patternFallback ? " More practice is needed; using ordinary words." : "") + (root.patternError ? " " + root.patternError : "") + (root.patternNotice ? " " + root.patternNotice : "")
+          color: root.muted; font.family: root.fontFamily; font.pixelSize: 12 * root.uiScale
+        }
+        Flow {
+          width: parent.width; spacing: 10 * root.uiScale
+          ActionButton { scaleFactor: root.uiScale; label: "Targeted practice"; enabledControl: root.patternKnown && root.patternEnabled; onActivated: root.patternAction("targeted") }
+          ActionButton { scaleFactor: root.uiScale; label: !root.patternKnown ? "Retry pattern status" : (root.patternEnabled ? "Disable pattern collection" : "Enable pattern collection"); onActivated: root.patternAction(!root.patternKnown ? "status" : (root.patternEnabled ? "disable" : "enable")) }
+          ActionButton { scaleFactor: root.uiScale; label: "Clear pattern data"; enabledControl: root.patternKnown; onActivated: root.patternAction("clear") }
+        }
+        Text {
           visible: false
           width: parent.width
           text: "THE QUIET MOMENT  //  KEEP A STEADY RHYTHM"
@@ -558,9 +639,10 @@ Item {
             id: passage
             width: promptViewport.width
             height: contentHeight
-            text: root.errorMessage ? root.errorMessage : root.promptHtml()
-            textFormat: root.errorMessage ? TextEdit.PlainText : TextEdit.RichText
-            color: root.errorMessage ? root.wrong : root.foreground
+            visible: !root.errorMessage
+            text: root.promptHtml()
+            textFormat: TextEdit.RichText
+            color: root.foreground
             font.family: root.fontFamily
             font.pixelSize: 28 * root.uiScale
             wrapMode: TextEdit.WordWrap
@@ -568,6 +650,17 @@ Item {
             activeFocusOnPress: false
             selectByMouse: false
             onTextChanged: Qt.callLater(promptViewport.alignCursor)
+          }
+          Text {
+            objectName: "practiceError"
+            width: promptViewport.width
+            visible: !!root.errorMessage
+            text: root.errorMessage
+            textFormat: Text.PlainText
+            color: root.wrong
+            font.family: root.fontFamily
+            font.pixelSize: 28 * root.uiScale
+            wrapMode: Text.WordWrap
           }
           MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.IBeamCursor; onClicked: keyCatcher.forceActiveFocus() }
         }

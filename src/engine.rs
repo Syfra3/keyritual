@@ -1,3 +1,4 @@
+use crate::patterns::PatternStats;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -67,6 +68,8 @@ pub struct Snapshot {
     pub pace_wpm: Vec<u32>,
     pub pace_seconds: Vec<u32>,
     pub consistency: Option<u32>,
+    pub targeted: bool,
+    pub pattern_fallback: bool,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -80,6 +83,8 @@ pub enum Command {
         punctuation: bool,
         #[serde(default)]
         numbers: bool,
+        #[serde(default)]
+        targeted: bool,
     },
     Key {
         text: char,
@@ -88,6 +93,11 @@ pub enum Command {
     Tick,
     History,
     GetPreferences,
+    GetPatternPractice,
+    SetPatternPractice {
+        enabled: bool,
+    },
+    ClearPatternPractice,
     SetCommandKey {
         key: String,
     },
@@ -111,6 +121,10 @@ pub struct Session {
     attempts: u32,
     correct_attempts: u32,
     pub newly_finished: bool,
+    pub pattern_observations: PatternStats,
+    pub pattern_collection: bool,
+    pub targeted: bool,
+    pub pattern_fallback: bool,
     pace_wpm: Vec<u32>,
     pace_seconds: Vec<u32>,
 }
@@ -166,6 +180,10 @@ impl Session {
             attempts: 0,
             correct_attempts: 0,
             newly_finished: false,
+            pattern_observations: PatternStats::default(),
+            pattern_collection: false,
+            targeted: false,
+            pattern_fallback: false,
             pace_wpm: Vec::new(),
             pace_seconds: Vec::new(),
         })
@@ -192,6 +210,39 @@ impl Session {
         )
     }
 
+    pub fn target_patterns(&mut self, stats: &PatternStats) {
+        self.targeted = true;
+        let seed = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos() as u64;
+        let original: Vec<&str> = self.prompt.split_whitespace().collect();
+        let words = stats.select_words(WORDS, original.len(), seed);
+        if words.is_empty() {
+            self.pattern_fallback = true;
+            return;
+        }
+        self.prompt = original
+            .iter()
+            .zip(words)
+            .map(|(original, replacement)| {
+                if original.as_bytes().first().is_some_and(u8::is_ascii_digit) {
+                    (*original).to_owned()
+                } else {
+                    let suffix = if original.ends_with(',') {
+                        ","
+                    } else if original.ends_with('.') {
+                        "."
+                    } else {
+                        ""
+                    };
+                    format!("{replacement}{suffix}")
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(" ");
+    }
+
     pub fn apply(&mut self, command: Command, now: Instant) {
         self.newly_finished = false;
         if matches!(self.phase, Phase::Finished | Phase::Failed) {
@@ -216,6 +267,14 @@ impl Session {
                     self.phase = Phase::Running;
                 }
                 let expected = self.prompt.as_bytes()[self.typed.len()] as char;
+                if self.pattern_collection {
+                    let previous = self
+                        .typed
+                        .len()
+                        .checked_sub(1)
+                        .map(|index| self.prompt.as_bytes()[index] as char);
+                    self.pattern_observations.observe(previous, expected, text);
+                }
                 self.attempts += 1;
                 if text == expected {
                     self.correct_attempts += 1;
@@ -236,6 +295,9 @@ impl Session {
             | Command::Start { .. }
             | Command::History
             | Command::GetPreferences
+            | Command::GetPatternPractice
+            | Command::SetPatternPractice { .. }
+            | Command::ClearPatternPractice
             | Command::SetCommandKey { .. }
             | Command::SetShortcutPrompted { .. } => {}
         }
@@ -363,6 +425,8 @@ impl Session {
             pace_wpm: self.pace_wpm.clone(),
             pace_seconds: self.pace_seconds.clone(),
             consistency: self.consistency(),
+            targeted: self.targeted,
+            pattern_fallback: self.pattern_fallback,
         }
     }
 }
