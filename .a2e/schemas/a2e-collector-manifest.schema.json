@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A2E collector manifest, version 1 (foundation)",
+  "type": "object", "required": ["version", "run", "phase", "config_sha256", "scripts", "state", "collectors"],
+  "properties": {
+    "version": {"const": 1}, "run": {"type": "string", "pattern": "^\\.a2e/runs/"},
+    "phase": {"enum": ["before", "after"]}, "config_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "scripts": {"type": "object"}, "state": {"type": "object", "required": ["base", "head", "paths", "snapshot"]},
+    "baseline_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$", "description": "Hash of the historical before manifest when available"},
+    "collectors": {"type": "array", "items": {"type": "object", "required": ["id", "category", "boundary", "required", "paths", "status", "diagnostic", "artifacts"], "properties": {
+      "status": {"enum": ["PASS", "FAIL", "REGRESSION", "SKIPPED", "GAP", "NOT_CONFIGURED"]},
+      "metric": {"type": "number"}, "baseline_metric": {"type": "number"}, "budget": {"type": "number"},
+      "result_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+      "artifacts": {"type": "array", "items": {"type": "object", "required": ["path", "sha256"]}}
+    }}}
+  }
+}
