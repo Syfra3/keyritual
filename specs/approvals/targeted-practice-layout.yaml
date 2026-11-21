@@ -1,0 +1,20 @@
+feature: targeted-practice-layout
+status: confirmed
+baseline_commit: 7fc17d710764e32a165b03ea84135c72e512b645
+spec: specs/hard_spec.md
+scenarios_file: features/targeted_practice_layout.feature
+approval: User approved the specification and scenarios in this conversation.
+scenarios:
+  - SCN-001
+  - SCN-002
+  - SCN-003
+  - SCN-004
+  - SCN-005
+  - SCN-006
+  - SCN-007
+  - SCN-008
+  - SCN-009
+  - SCN-010
+  - SCN-011
+  - SCN-012
+  - SCN-013
