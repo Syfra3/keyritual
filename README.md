@@ -67,6 +67,8 @@ The marketplace root [`preview.png`](preview.png) uses the cropped Reflect scree
 
 ## The ritual
 
+Keyritual includes optional targeted practice. Explicitly enable collection to store local counts of expected letters and adjacent pairs from completed sessions; exact typed text is not stored in these counts. Targeted practice favors words with higher observed error rates, falling back to ordinary words when there is not enough data. Clear pattern data independently of history, or disable collection without deleting it. Older sessions cannot supply pattern data. The bundled engine was rebuilt for local testing; live UI verification remains outstanding.
+
 1. **Summon** a focused, theme-aware typing surface from Omarchy.
 2. **Practice** in timed or word-count mode with punctuation and number switches, immediate character feedback, corrections, and an unobtrusive live score.
 3. **Reflect** on WPM, accuracy, raw speed, real per-second pace/consistency, local personal bests, previous-run deltas and prior-five-session averages. **History** shows the 20 most recent completed sessions with local dates and errors when available. **Share Result** previews only the current rounded score, mode and limit; clicking **Open X compose** opens an external browser with that text. It never posts automatically. Older stored sessions show unavailable errors rather than invented zeros. Missed-key coaching remains on the roadmap.
@@ -92,7 +94,7 @@ Editable SVGs and PNG previews live in [`images/`](images/). See [BRAND.md](BRAN
 - **Local by default:** no Monkeytype account or global keystroke capture; only an explicit Open X compose click opens an external URL with rounded score/mode/limit.
 - **Distribution:** one Quattro plugin manifest at the repo root, the tracked x86_64 engine in `bin/`, and an optional XDG app launcher from manual installation. The installer validates its staged plugin on Omarchy 4.x; no marketplace listing is included in this release.
 
-The feature sequence and remaining acceptance checks are in [PLAN.md](PLAN.md). The plugin ID is `io.github.syfra3.keyritual`. This early version has no language packs or missed-key coaching yet. Finished-session history is local, bounded to 200 runs, with the newest 20 shown in the History menu. Real pace/error history, X compose, current controls and first-open shortcut effects still need live UI/privacy checks; stable version numbering does not establish these checks. See [v0.1.0 release notes](docs/releases/v0.1.0.md).
+The feature sequence and remaining acceptance checks are in [PLAN.md](PLAN.md). The plugin ID is `io.github.syfra3.keyritual`. This early version has no language packs. Finished-session history is local, bounded to 200 runs, with the newest 20 shown in the History menu. Real pace/error history, X compose, current controls and first-open shortcut effects still need live UI/privacy checks; stable version numbering does not establish these checks. See [v0.1.0 release notes](docs/releases/v0.1.0.md).
 
 For marketplace submission metadata, compatibility and remaining checks, see [docs/marketplace.md](docs/marketplace.md). A submitted issue is not an approved marketplace listing.
 

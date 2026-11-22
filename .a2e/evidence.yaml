@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "collectors": [
+    {
+      "id": "rust-tests",
+      "patterns": ["src/*", "tests/*", "Keyritual.qml", "macos/*", "bin/*", "README.md"],
+      "script": ".a2e/collectors/pattern-rust.py",
+      "required": true,
+      "category": "quality",
+      "boundary": "core-protocol-clients"
+    },
+    {
+      "id": "qml-routing",
+      "patterns": ["src/*", "tests/*", "Keyritual.qml", "macos/*", "bin/*", "README.md"],
+      "script": ".a2e/collectors/pattern-qml.py",
+      "required": true,
+      "category": "quality",
+      "boundary": "linux-client-routing"
+    },
+    {
+      "id": "qml-ui-regressions",
+      "patterns": ["Keyritual.qml", "tests/*"],
+      "script": ".a2e/collectors/pattern-ui-regressions.py",
+      "required": true,
+      "category": "quality",
+      "boundary": "linux-client-error-and-clear"
+    },
+    {
+      "id": "qml-error-recovery",
+      "patterns": ["Keyritual.qml", "tests/*"],
+      "script": ".a2e/collectors/pattern-error-recovery.py",
+      "required": true,
+      "category": "quality",
+      "boundary": "linux-client-error-recovery"
+    },
+    {
+      "id": "qml-dispatch-ordering",
+      "patterns": ["Keyritual.qml", "tests/*"],
+      "script": ".a2e/collectors/pattern-dispatch.py",
+      "required": true,
+      "category": "quality",
+      "boundary": "linux-client-request-ownership"
+    },
+    {
+      "id": "qml-unavailable-status",
+      "patterns": ["Keyritual.qml", "tests/*"],
+      "script": ".a2e/collectors/pattern-unavailable-ui.py",
+      "required": true,
+      "category": "quality",
+      "boundary": "linux-client-unavailable-status"
+    },
+    {
+      "id": "rust-format",
+      "patterns": ["src/*", "tests/*"],
+      "script": ".a2e/collectors/pattern-format.py",
+      "required": true,
+      "category": "quality",
+      "boundary": "rust-formatting"
+    },
+    {
+      "id": "rust-clippy",
+      "patterns": ["src/*", "tests/*"],
+      "script": ".a2e/collectors/pattern-clippy.py",
+      "required": true,
+      "category": "quality",
+      "boundary": "rust-static-analysis"
+    },
+    {
+      "id": "bundle-match",
+      "patterns": ["src/*", "bin/*", "tests/*", "Keyritual.qml"],
+      "script": ".a2e/collectors/pattern-bundle.py",
+      "required": true,
+      "category": "quality",
+      "boundary": "linux-bundled-engine"
+    },
+    {
+      "id": "rust-line-coverage-percent",
+      "patterns": ["src/*", "tests/*"],
+      "script": ".a2e/collectors/pattern-coverage.py",
+      "required": true,
+      "category": "quality",
+      "boundary": "rust-line-coverage"
+    },
+    {
+      "id": "rust-max-function-ccn",
+      "patterns": ["src/*", "tests/*"],
+      "script": ".a2e/collectors/pattern-complexity.py",
+      "required": true,
+      "category": "quality",
+      "boundary": "rust-cyclomatic-complexity"
+    },
+    {
+      "id": "linux-visual",
+      "patterns": ["Keyritual.qml", "src/*", "tests/*", "bin/*"],
+      "script": ".a2e/collectors/pattern-visual.py",
+      "required": true,
+      "category": "visual",
+      "boundary": "linux-ui-ux"
+    }
+  ]
+}

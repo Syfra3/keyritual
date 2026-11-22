@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "collectors": [
+    {"id": "backend", "patterns": ["backend/*"], "script": ".a2e/collectors/backend.sh", "required": true, "category": "quality", "boundary": "backend", "budget": 5},
+    {"id": "frontend", "patterns": ["frontend/*"], "required": false, "category": "visual", "boundary": "frontend"}
+  ]
+}

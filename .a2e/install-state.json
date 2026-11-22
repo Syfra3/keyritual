@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "adapter": "generic",
+  "files": {
+    ".a2e/_specs/spec-template.md": "f06d311318c6e0c355b4d7e62a152ed7c7b77d6d0282d84fdc4ded575480b0cc",
+    ".a2e/scripts/aaed.py": "f5178e0d53f3a33b4f03e47094b95ce583803b7d41a2467378ec36ee74a3cde2",
+    ".a2e/scripts/a2e_entry.py": "fecb782821aba6fe72c5ae5364ff085ba66cace913f1507ce7435cad4b8e9f2f",
+    ".a2e/scripts/a2e_collect.py": "e59e1191e5a4d5d8346d986e114e401c40a8bc7b8274649032830f35a35d67a7",
+    ".a2e/scripts/a2e_review.py": "00be36ffe7b2f6898d8c57a4d074bbdf12f8bf40a088b644059038cbbfc6c081",
+    ".a2e/scripts/a2e_signoff.py": "0bf8feabfe5018a99e5340047545bc6c44dea2cae0ffb6ea22a6a9d696b51bcd",
+    ".a2e/scripts/a2e_run.py": "f848ea1e6fbbcb749f62b4240cb78dc5fb09d72a2b24efa65d8ebdc1bb13b713",
+    ".a2e/collectors/run-diff.sh": "07d025a8f246cc81c8a175f5c5d581ef85ab6ff2685ede3eb93822a13f1ae3f7",
+    ".a2e/evidence.example.yaml": "1bfc28959e210dcb200cb22d1fa263579fcb1c37ccf0a8cf2295995b801df78f",
+    ".a2e/schemas/manifest-v1.json": "c660366cd54b17ad2dde9b0f0867207e450b09e76f7b114ea349ca75c1ade1a6",
+    ".a2e/schemas/a2e-collector-config.schema.json": "a35d92640fde0817e2f3820d4c32d716f5b07f93ab40269ac13b33431a7fdffe",
+    ".a2e/schemas/a2e-collector-manifest.schema.json": "3a934df6101286003718b8084a4bfaa9c119ea2c7d4922f45ae3f961c7805ddf",
+    ".a2e/workflow.md": "92f18a1921750472a7e9c8dfec3fcdeee1231aeda03f2048f53577b08bb9ddbe",
+    ".a2e/scripts/a2e_cage.py": "67cbadbd1964303725aa3664d593ebdf880ca88ceab7801e8a8892ea4477432a",
+    ".a2e/adapters/generic/AGENTS.md": "e21111569ca254227ccff7cd06ef2a68e6599a3a64cc98ecf81676793bf551c0",
+    ".a2e/.gitignore": "b3faa4482e1ded83d8e5ebe2a76228fe89dd110095c0ba9261076172314f5d6f"
+  },
+  "hook_added": false,
+  "ignore_added": false
+}
