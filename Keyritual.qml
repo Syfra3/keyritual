@@ -91,7 +91,13 @@ Item {
   property string patternNotice: ""
   property int pendingPatternClear: 0
   property var pendingPatternRequests: ({})
+  property var pendingTargetedRequests: ({})
   property bool patternOwnsMainError: false
+  property bool patternConsentOpen: false
+  property bool patternConsentTargeted: false
+  property int patternDialogSelection: 0
+  property int pendingPatternConsent: 0
+  property int pendingTargetedStatus: 0
 
   property color background: "#111d22"
   property color foreground: "#d7e2d5"
@@ -121,8 +127,12 @@ Item {
     errorMessage = ""
     patternKnown = false
     pendingPatternRequests = ({})
+    pendingTargetedRequests = ({})
     pendingPatternClear = 0
     patternOwnsMainError = false
+    patternConsentOpen = false
+    pendingPatternConsent = 0
+    pendingTargetedStatus = 0
     state = ({})
     commandMode = false
     captureBinding = false
@@ -144,6 +154,7 @@ Item {
     commandMode = false
     captureBinding = false
     globalPromptOpen = false
+    patternConsentOpen = false
     historyOpen = false
     shareOpen = false
     graphReveal.stop()
@@ -215,20 +226,44 @@ Item {
       requestId = root.send({ type: "clear_pattern_practice" })
       root.pendingPatternClear = requestId || 0
     }
-    else if (action === "targeted" && root.patternEnabled && root.patternKnown !== false)
-      root.send({ type: "start", mode: root.mode, limit: root.limit, strict: root.strict, punctuation: root.punctuation, numbers: root.numbers, targeted: true })
+    else if (action === "targeted" && root.patternEnabled && root.patternKnown !== false) {
+      var targetedId = root.send({ type: "start", mode: root.mode, limit: root.limit, strict: root.strict, punctuation: root.punctuation, numbers: root.numbers, targeted: true })
+      if (targetedId) {
+        if (!root.pendingTargetedRequests) root.pendingTargetedRequests = ({})
+        root.pendingTargetedRequests[targetedId] = true
+      }
+    }
     if (requestId) {
       if (!root.pendingPatternRequests) root.pendingPatternRequests = ({})
       root.pendingPatternRequests[requestId] = action
+      if (action === "status" && root.patternConsentOpen && root.patternConsentTargeted) root.pendingTargetedStatus = requestId
     }
+    return requestId
   }
   function patternResponse(message) {
     if (message.type === "pattern_practice") {
+      if (root.pendingPatternConsent && message.id !== root.pendingPatternConsent) return
       root.patternEnabled = message.enabled === true
       root.patternKnown = true
       if (root.patternError && root.errorMessage === root.patternError && root.patternOwnsMainError !== false) root.errorMessage = ""
       root.patternOwnsMainError = false
       root.patternError = ""
+      if (root.pendingTargetedStatus && message.id === root.pendingTargetedStatus) {
+        root.pendingTargetedStatus = 0
+        if (root.patternEnabled && root.patternConsentOpen && root.patternConsentTargeted) {
+          root.patternConsentOpen = false
+          root.patternConsentTargeted = false
+          root.patternAction("targeted")
+        }
+      }
+      if (root.pendingPatternConsent && message.id === root.pendingPatternConsent) {
+        root.pendingPatternConsent = 0
+        if (root.patternEnabled) {
+          root.patternConsentOpen = false
+          if (root.patternConsentTargeted) root.patternAction("targeted")
+          root.patternConsentTargeted = false
+        }
+      }
       if (root.pendingPatternClear && message.id === root.pendingPatternClear) {
         root.patternNotice = "Pattern data cleared."
         root.pendingPatternClear = 0
@@ -236,6 +271,8 @@ Item {
     }
     else if (message.type === "state") root.patternFallback = message.targeted === true && message.pattern_fallback === true
     else if (message.type === "error") {
+      if (root.pendingTargetedStatus && message.id === root.pendingTargetedStatus) root.pendingTargetedStatus = 0
+      if (root.pendingPatternConsent && message.id === root.pendingPatternConsent) root.pendingPatternConsent = 0
       root.patternKnown = false
       root.patternError = message.message || "Pattern practice error"
       if (root.pendingPatternClear && message.id === root.pendingPatternClear) {
@@ -246,21 +283,47 @@ Item {
   }
   function patternBehaviorEnd() {}
 
+  function patternOpenTargeted() {
+    root.patternDialogSelection = 0
+    if (!root.patternKnown) { root.patternConsentOpen = true; root.patternConsentTargeted = true; root.patternAction("status"); return }
+    if (root.patternEnabled) root.patternAction("targeted")
+    else { root.patternConsentTargeted = true; root.patternConsentOpen = true }
+  }
+  function patternOpenCollectionConsent() {
+    root.patternConsentTargeted = false
+    root.patternDialogSelection = 0
+    root.patternConsentOpen = true
+  }
+  function patternAnswerConsent(accepted) {
+    if (root.pendingPatternConsent || root.pendingPatternClear) return
+    if (!accepted) { root.patternConsentOpen = false; root.patternConsentTargeted = false; root.pendingTargetedStatus = 0; return }
+    root.pendingPatternConsent = root.patternAction("enable")
+    if (!root.pendingPatternConsent) root.patternError = "Could not contact the practice engine."
+  }
+  function patternConsentEnd() {}
+
   function receive(line) {
     var message
     try { message = JSON.parse(line) } catch (e) { errorMessage = "Invalid response from Rust engine"; return }
+    var targetedRequest = root.pendingTargetedRequests && root.pendingTargetedRequests[message.id]
+    if (targetedRequest && (message.type === "state" || message.type === "error")) delete root.pendingTargetedRequests[message.id]
     var patternRequest = root.pendingPatternRequests && root.pendingPatternRequests[message.id]
     if (patternRequest && (message.type === "pattern_practice" || message.type === "error")) {
       delete root.pendingPatternRequests[message.id]
       patternResponse(message)
       if (message.type === "error") {
-        root.errorMessage = message.message || "Pattern practice error"
-        root.patternOwnsMainError = true
+        root.patternConsentOpen = true
       }
       return
     }
     if (message.id < pendingStart || message.id < lastResponse) return
     lastResponse = message.id
+    if (targetedRequest && message.type === "error" && message.message === "Enable pattern collection before targeted practice") {
+      patternResponse(message)
+      root.patternConsentTargeted = true
+      root.patternConsentOpen = true
+      return
+    }
     if (typeof patternResponse === "function" && message.type === "state") patternResponse(message)
     if (message.type === "error") {
       var patternAccessError = message.code === "pattern_state_unavailable" || message.message === "Could not access pattern practice settings"
@@ -416,7 +479,7 @@ Item {
     }
 
     Rectangle { anchors.fill: parent; color: root.scrim }
-    MouseArea { anchors.fill: parent; onClicked: { if (!root.globalPromptOpen && !hotkeyInstall.running) root.dismiss() } }
+    MouseArea { anchors.fill: parent; onClicked: { if (!root.globalPromptOpen && !root.patternConsentOpen && !hotkeyInstall.running) root.dismiss() } }
 
     Rectangle {
       id: card
@@ -435,7 +498,7 @@ Item {
         x: card.width - width - 40 * root.uiScale
         y: 8 * root.uiScale
         label: "[ CLOSE ]"
-        onActivated: { if (!root.globalPromptOpen && !hotkeyInstall.running) root.dismiss() }
+        onActivated: { if (!root.globalPromptOpen && !root.patternConsentOpen && !hotkeyInstall.running) root.dismiss() }
       }
 
       Repeater {
@@ -462,6 +525,21 @@ Item {
         focus: true
         Keys.priority: Keys.BeforeItem
         Keys.onPressed: function(event) {
+          if (root.patternConsentOpen) {
+            if (!(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
+              if (event.key === Qt.Key_Escape) root.patternAnswerConsent(false)
+              else if (event.key === Qt.Key_Left || event.key === Qt.Key_Up) root.patternDialogSelection = Math.max(0, root.patternDialogSelection - 1)
+              else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down || event.key === Qt.Key_Tab) root.patternDialogSelection = (root.patternDialogSelection + 1) % (root.patternKnown && !root.patternEnabled ? 3 : 2)
+              else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                if (root.patternDialogSelection === 0) root.patternAnswerConsent(false)
+                else if (!root.patternKnown) root.patternAction("status")
+                else if (!root.patternEnabled && root.patternDialogSelection === 1) root.patternAnswerConsent(true)
+                else if (!root.pendingPatternConsent && !root.pendingPatternClear) root.patternAction("clear")
+              }
+            }
+            event.accepted = true
+            return
+          }
           if (root.globalPromptOpen) {
             if (root.pendingGlobalPrompt === 0 && !hotkeyInstall.running &&
                 !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
@@ -594,19 +672,10 @@ Item {
             scaleFactor: root.uiScale; label: "[ N ] NUMBERS " + (root.numbers ? "ON" : "OFF"); selected: root.numbers
             onActivated: { root.numbers = !root.numbers; root.sendStart(); keyCatcher.forceActiveFocus() }
           }
+          ActionButton { scaleFactor: root.uiScale; label: "[ " + "Targeted practice".toUpperCase() + " ]"; onActivated: { root.patternOpenTargeted(); keyCatcher.forceActiveFocus() } }
         }
         Rectangle { width: parent.width; height: 1; color: root.borderColor }
-        Text {
-          width: parent.width; wrapMode: Text.Wrap
-          text: "Optional coaching: consenting stores local counts of expected letters and pairs from practice, not typed text. Clear them any time. " + (!root.patternKnown ? "Collection status unavailable." : (root.patternEnabled ? "Collection enabled." : "Collection disabled.")) + (root.patternFallback ? " More practice is needed; using ordinary words." : "") + (root.patternError ? " " + root.patternError : "") + (root.patternNotice ? " " + root.patternNotice : "")
-          color: root.muted; font.family: root.fontFamily; font.pixelSize: 12 * root.uiScale
-        }
-        Flow {
-          width: parent.width; spacing: 10 * root.uiScale
-          ActionButton { scaleFactor: root.uiScale; label: "Targeted practice"; enabledControl: root.patternKnown && root.patternEnabled; onActivated: root.patternAction("targeted") }
-          ActionButton { scaleFactor: root.uiScale; label: !root.patternKnown ? "Retry pattern status" : (root.patternEnabled ? "Disable pattern collection" : "Enable pattern collection"); onActivated: root.patternAction(!root.patternKnown ? "status" : (root.patternEnabled ? "disable" : "enable")) }
-          ActionButton { scaleFactor: root.uiScale; label: "Clear pattern data"; enabledControl: root.patternKnown; onActivated: root.patternAction("clear") }
-        }
+        Text { visible: root.patternFallback; width: parent.width; wrapMode: Text.Wrap; text: "More practice is needed; using ordinary words."; color: root.muted; font.family: root.fontFamily; font.pixelSize: 12 * root.uiScale }
         Text {
           visible: false
           width: parent.width
@@ -680,9 +749,18 @@ Item {
           font.pixelSize: Style.font.body
           wrapMode: Text.Wrap
         }
-        ActionButton {
-          scaleFactor: root.uiScale; label: "[ HISTORY ]"
-          onActivated: { root.requestHistory(); keyCatcher.forceActiveFocus() }
+        Flow {
+          width: parent.width; spacing: 10 * root.uiScale
+          ActionButton {
+            scaleFactor: root.uiScale; label: "[ HISTORY ]"
+            onActivated: { root.requestHistory(); keyCatcher.forceActiveFocus() }
+          }
+          ActionButton {
+            scaleFactor: root.uiScale
+            label: "[ " + (!root.patternKnown ? "Retry pattern status" : (root.patternEnabled ? "Disable pattern collection" : "Enable pattern collection")).toUpperCase() + " ]"
+            onActivated: { if (!root.patternKnown) { root.patternConsentOpen = true; root.patternAction("status") } else if (root.patternEnabled) root.patternAction("disable"); else root.patternOpenCollectionConsent(); keyCatcher.forceActiveFocus() }
+          }
+          ActionButton { scaleFactor: root.uiScale; label: "[ TARGETED SETTINGS ]"; onActivated: { root.patternOpenCollectionConsent(); keyCatcher.forceActiveFocus() } }
         }
         }
       }
@@ -912,6 +990,39 @@ Item {
             onActivated: root.openXCompose()
           }
           Text { visible: root.shareOpen && root.shareError !== ""; text: root.shareError; color: root.wrong; font.family: root.fontFamily; font.pixelSize: 12 * root.uiScale }
+          }
+        }
+      }
+
+      Rectangle {
+        id: patternDialog
+        visible: root.patternConsentOpen
+        z: 31
+        anchors.fill: parent
+        anchors.margins: 12 * root.uiScale
+        color: root.background
+        border.color: root.borderColor
+        border.width: 2
+        MouseArea { anchors.fill: parent; onClicked: keyCatcher.forceActiveFocus() }
+        Flickable {
+          x: 24 * root.uiScale; y: 22 * root.uiScale
+          width: parent.width - x * 2; height: parent.height - y * 2
+          contentHeight: patternDialogContent.height; clip: true
+          Column {
+            id: patternDialogContent
+            width: parent.width; spacing: 12 * root.uiScale
+            Text { width: parent.width; text: "TARGETED PRACTICE"; color: root.accent; font.family: root.fontFamily; font.bold: true; font.pixelSize: 18 * root.uiScale; wrapMode: Text.Wrap }
+            Text { width: parent.width; text: "Optional coaching stores local counts of expected letters and pairs from practice, not exact typed text. You can clear pattern data at any time."; color: root.foreground; font.family: root.fontFamily; font.pixelSize: 13 * root.uiScale; wrapMode: Text.Wrap }
+            Text { visible: !root.patternKnown; width: parent.width; text: "Collection status unavailable."; color: root.wrong; font.family: root.fontFamily; font.pixelSize: 12 * root.uiScale; wrapMode: Text.Wrap }
+            Text { visible: root.patternError !== ""; width: parent.width; text: root.patternError; color: root.wrong; font.family: root.fontFamily; font.pixelSize: 12 * root.uiScale; wrapMode: Text.Wrap }
+            Text { visible: root.patternNotice !== ""; width: parent.width; text: root.patternNotice; color: root.muted; font.family: root.fontFamily; font.pixelSize: 12 * root.uiScale; wrapMode: Text.Wrap }
+            Flow {
+              width: parent.width; spacing: 12 * root.uiScale
+              ActionButton { scaleFactor: root.uiScale; label: "[ CANCEL ]"; selected: root.patternDialogSelection === 0; onActivated: { root.patternAnswerConsent(false); keyCatcher.forceActiveFocus() } }
+              ActionButton { visible: root.patternKnown && !root.patternEnabled; scaleFactor: root.uiScale; label: "[ ACCEPT ]"; selected: root.patternDialogSelection === 1; enabledControl: root.pendingPatternConsent === 0 && root.pendingPatternClear === 0; onActivated: { root.patternAnswerConsent(true); keyCatcher.forceActiveFocus() } }
+              ActionButton { visible: !root.patternKnown; scaleFactor: root.uiScale; label: "[ RETRY PATTERN STATUS ]"; selected: root.patternDialogSelection === 1; onActivated: { root.patternAction("status"); keyCatcher.forceActiveFocus() } }
+              ActionButton { visible: root.patternKnown; scaleFactor: root.uiScale; label: "[ " + "Clear pattern data".toUpperCase() + " ]"; selected: root.patternDialogSelection === (root.patternEnabled ? 1 : 2); enabledControl: root.pendingPatternConsent === 0 && root.pendingPatternClear === 0; onActivated: { root.patternAction("clear"); keyCatcher.forceActiveFocus() } }
+            }
           }
         }
       }
